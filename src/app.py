@@ -12,10 +12,13 @@ df = pd.read_csv(url)
 app = dash.Dash(__name__)
 server = app.server
 
-# Create a bar plot using Plotly Express with a log-scale y-axis
-# Replace 'action' with 'topic' in the plot creation
-fig = px.bar(df['topic'].value_counts(), x=df['topic'].value_counts().index, y=df['topic'].value_counts().values, labels={'x': 'Topic', 'y': 'Count'}, title='Distribution of Topics')
-fig.update_yaxes(type="log")  # Set y-axis to logarithmic scale
+# Prepare data for the treemap
+topic_counts = df['topic'].value_counts().reset_index()
+topic_counts.columns = ['Topic', 'Count']
+
+# Create a treemap using Plotly Express
+fig = px.treemap(topic_counts, path=['Topic'], values='Count', title='Distribution of Topics')
+fig.update_traces(marker=dict(colors=['pink']))  # Set the color to pink
 
 # Define the layout of the dashboard
 app.layout = html.Div([
@@ -33,21 +36,21 @@ app.layout = html.Div([
         multi=False
     ),
 
-    dcc.Graph(id='bar-plot')
+    dcc.Graph(id='bar-plot', figure=fig)  # Set the initial figure to the treemap
 ])
 
-# Create a callback to update the bar plot based on the selected status
+# Create a callback to update the treemap based on the selected status
 @app.callback(
     Output('bar-plot', 'figure'),
     Input('status-dropdown', 'value')
 )
 def update_bar_plot(selected_status):
-    # Update here as well to use 'topic' instead of 'action'
     filtered_df = df[df['status'] == selected_status]
-    fig = px.bar(filtered_df['topic'].value_counts(), x=filtered_df['topic'].value_counts().index,
-                 y=filtered_df['topic'].value_counts().values, labels={'x': 'Topic', 'y': 'Count'},
-                 title=f'Distribution of Topics for {selected_status} Proposals')
-    fig.update_yaxes(type="log")  # Set y-axis to logarithmic scale
+    topic_counts_filtered = filtered_df['topic'].value_counts().reset_index()
+    topic_counts_filtered.columns = ['Topic', 'Count']
+
+    fig = px.treemap(topic_counts_filtered, path=['Topic'], values='Count', title=f'Distribution of Topics for {selected_status} Proposals')
+    fig.update_traces(marker=dict(colors=['pink']))  # Set the color to pink
     return fig
 
 # Run the Dash app
